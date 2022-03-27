@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+spec:
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      imagePullSecrets:
+      - name: authSecret
+      restartPolicy: Always
+      containers:
+      - name: myapp
+        image: <Image>
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          exec:
+            command:
+            - cat
+            - /tmp/healthy
+          initialDelaySeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 20
+        envFrom:
+        - secretRef:
+            name: mysecret
+        - configMapRef:
+            name: myconfigmap
+        env:
+        - name: MESSAGE
+          value: "Hello"
+        - name: CMESSAGE
+          valueFrom:
+            configMapKeyRef:
+              name: configmapname
+              key: message
+        - name: SMESSAGE
+          valueFrom:
+            secretKeyRef:
+              name: secretname
+              key: message
+        volumeMounts:
+        - name: xxx
+          mountPath: /tmp/folder
+      volumes:
+      - name: configvol
+        configMap:
+          name: configvolname
+          items:
+          - key: akey
+            path: apath
+      - name: secretvol
+        secret:
+          secretName: secretvolname
+      - name: pvcvol
+        persistentVolumeClaim:
+          claimName: pvcname
